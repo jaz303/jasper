@@ -93,8 +93,9 @@ function makeRootEnv() {
 
     var slice = Array.prototype.slice;
 
-    function reduce(cb, val, xs) {
-        for (var i = 0; i < xs.length; ++i) {
+    function reduce(cb, xs) {
+        var val = xs[0];
+        for (var i = 1; i < xs.length; ++i) {
             val = cb(val, xs[i]);
         }
         return val;
@@ -103,19 +104,19 @@ function makeRootEnv() {
     var env = root._env;
 
     env['+'] = function() {
-        return reduce(function(l,r) { return l + r; }, 0, arguments);
+        return reduce(function(l,r) { return l + r; }, arguments);
     };
 
     env['-'] = function() {
-        return reduce(function(l,r) { return l - r; }, 0, arguments);
+        return reduce(function(l,r) { return l - r; }, arguments);
     }
 
     env['*'] = function() {
-        return reduce(function(l,r) { return l * r; }, 0, arguments);
+        return reduce(function(l,r) { return l * r; }, arguments);
     }
 
     env['/'] = function() {
-        return reduce(function(l,r) { return l / r; }, 0, arguments);
+        return reduce(function(l,r) { return l / r; }, arguments);
     }
 
     env['car'] = function() { return arguments[0]; }

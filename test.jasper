@@ -9,4 +9,6 @@
     (define add10 (add-2 10))
     (print (add10 25))
     (print-hello)
+    (print (+ 1 2 3 4 5))
+    (print (- (* 10 5) (/ 21 3) 42))
 )
