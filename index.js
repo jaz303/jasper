@@ -1,6 +1,25 @@
 var sexp    = require('sexp'),
     fs      = require('fs');
 
+//
+// symbol
+
+var symbols = {};
+
+function symbol(sym) {
+    if (!(sym in symbols)) {
+        symbols[sym] = new Symbol(sym);
+    }
+    return symbols[sym];
+}
+
+function Symbol(sym) {
+    this.symbol = sym;
+}
+
+//
+//
+
 var args = process.argv.slice(2);
 
 function fail(msg) {
@@ -19,7 +38,7 @@ try {
 }
 
 try {
-    var ast = sexp(source);
+    var ast = sexp(source, {translateSymbol: symbol});
 } catch (e) {
     fail("parse error");
 }
@@ -53,8 +72,8 @@ Env.prototype.get = function(k) {
 //
 // helpers
 
-function string_p(v) {
-    return typeof v === 'string';
+function symbol_p(v) {
+    return v instanceof Symbol;
 }
 
 function all(p, ary) {
@@ -110,93 +129,101 @@ function makeRootEnv() {
 
 function evaluate(env, code) {
     
-    if (typeof code === 'string') {
+    if (code instanceof Symbol) {
 
-        return env.find(code).get(code);
+        var sym = code.symbol;
+        return env.find(sym).get(sym);
     
     } else if (!Array.isArray(code)) {
 
         return code;
-    
-    } else if (code[0] === 'quote') {
-    
-        return code[1];
-    
-    } else if (code[0] === 'define') {
-    
-        var k = code[1],
-            v = evaluate(env, code[2]);
-        
-        env.set(k, v);
-
-        return v;
-    
-    } else if (code[0] === 'set!') {
-    
-        var k = code[1],
-            t = env.find(k),
-            v = evaluate(env, code[2]);
-        
-        t.set(k, v);
-
-        return v;
-    
-    } else if (code[0] === 'do') {
-    
-        var v = null;
-        code.slice(1).forEach(function(exp) {
-            v = evaluate(env, exp);
-        });
-
-        return v;
-    
-    } else if (code[0] === 'lambda') {
-
-        var params, body;
-
-        if (code.length === 2) {
-            params = [];
-            body = code[1];
-        } else if (code.length === 3) {
-            params = code[1],
-            body = code[2];
-        } else {
-            throw new Error("lambda: argument error");
-        }
-
-        if (!Array.isArray(params) || !Array.isArray(body)) {
-            throw new Error("lambda: argument error");   
-        }
-
-        if (!all(string_p, params)) {
-            throw new Error("lambda: params must be list of strings");
-        }
-
-        return function() {
-
-            if (arguments.length !== params.length) {
-                throw new Error("argument error: " + arguments.length + " for " + params.length);
-            }
-
-            var localEnv = new Env(env);
-
-            for (var i = 0; i < params.length; ++i) {
-                localEnv.set(params[i], arguments[i]);
-            }
-
-            return evaluate(localEnv, body);
-
-        }
 
     } else {
 
-        var exps = code.map(function(exp) {
-            return evaluate(env, exp);
-        });
+        if (code[0] instanceof Symbol) {
+            switch (code[0].symbol) {
+                
+                case 'quote':
+                    
+                    return code[1];
+                
+                case 'define':
 
-        var fn = exps.shift();
+                    var k = code[1].symbol,
+                        v = evaluate(env, code[2]);
+                    
+                    env.set(k, v);
 
-        return fn.apply(null, exps);
+                    return v;
+
+                case 'set!':
+
+                    var k = code[1].symbol,
+                        t = env.find(k),
+                        v = evaluate(env, code[2]);
+                    
+                    t.set(k, v);
+
+                    return v;
+
+                case 'do':
+
+                    var v = null;
+                    code.slice(1).forEach(function(exp) {
+                        v = evaluate(env, exp);
+                    });
+
+                    return v;
+
+                case 'lambda':
+
+                    var params, body;
+
+                    if (code.length === 2) {
+                        params = [];
+                        body = code[1];
+                    } else if (code.length === 3) {
+                        params = code[1],
+                        body = code[2];
+                    } else {
+                        throw new Error("lambda: argument error");
+                    }
+
+                    if (!Array.isArray(params) || !Array.isArray(body)) {
+                        throw new Error("lambda: argument error");   
+                    }
+
+                    if (!all(symbol_p, params)) {
+                        throw new Error("lambda: params must be list of symbols");
+                    }
+
+                    return function() {
+
+                        if (arguments.length !== params.length) {
+                            throw new Error("argument error: " + arguments.length + " for " + params.length);
+                        }
+
+                        var localEnv = new Env(env);
+
+                        for (var i = 0; i < params.length; ++i) {
+                            localEnv.set(params[i].symbol, arguments[i]);
+                        }
+
+                        return evaluate(localEnv, body);
+
+                    }
+
+            }
+
+            var exps = code.map(function(exp) {
+                return evaluate(env, exp);
+            });
+
+            var fn = exps.shift();
+
+            return fn.apply(null, exps);
+
+        }
 
     }
 
