@@ -1,0 +1,19 @@
+{
+  "name": "jasper",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "toy",
+    "lisp",
+    "interpter"
+  ],
+  "author": "Jason Frame <jason@onehackoranother.com> (http://jasonframe.co.uk)",
+  "license": "ISC",
+  "dependencies": {
+    "sexp": "~0.1.1"
+  }
+}

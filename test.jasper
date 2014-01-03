@@ -1,0 +1,12 @@
+(do
+    (define add-2
+        (lambda (x)
+            (lambda (y) (+ x y))))
+
+    (define print-hello
+        (lambda (print (quote "hello"))))
+
+    (define add10 (add-2 10))
+    (print (add10 25))
+    (print-hello)
+)
