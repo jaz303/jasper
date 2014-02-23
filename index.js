@@ -163,7 +163,7 @@ function evaluate(env, code) {
                         t = E.find(k),
                         v = evaluate(env, code[2]);
                     
-                    t.set(k, v);
+                    E.set(t, k, v);
 
                     return v;
 
