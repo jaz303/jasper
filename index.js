@@ -46,27 +46,29 @@ try {
 //
 // env
 
-function Env(parent) {
-    this._env = {};
-    this._parent = parent || null;
+var hasOwnProperty = Object.hasOwnProperty,
+    getPrototypeOf = Object.getPrototypeOf;
+
+function E(parent) {
+    return Object.create(parent || null);
 }
 
-Env.prototype.find = function(k) {
-    if (this._env.hasOwnProperty(k)) {
-        return this;
-    } else if (this._parent) {
-        return this._parent.find(k);
-    } else {
+E.find = function(e, k) {
+    if (!e) {
         throw new Error("symbol not found: " + k);
+    } else if (hasOwnProperty.call(e, k)) {
+        return e;
+    } else {
+        return E.find(getPrototypeOf(e), k);
     }
 }
 
-Env.prototype.set = function(k, v) {
-    this._env[k] = v;
+E.set = function(e, k, v) {
+    e[k] = v;
 }
 
-Env.prototype.get = function(k) {
-    return this._env[k];
+E.get = function(e, k) {
+    return e[k];
 }
 
 //
@@ -89,7 +91,7 @@ function all(p, ary) {
 
 function makeRootEnv() {
 
-    var root = new Env();
+    var root = E();
 
     var slice = Array.prototype.slice;
 
@@ -101,28 +103,26 @@ function makeRootEnv() {
         return val;
     }
 
-    var env = root._env;
-
-    env['+'] = function() {
+    root['+'] = function() {
         return reduce(function(l,r) { return l + r; }, arguments);
     };
 
-    env['-'] = function() {
+    root['-'] = function() {
         return reduce(function(l,r) { return l - r; }, arguments);
     }
 
-    env['*'] = function() {
+    root['*'] = function() {
         return reduce(function(l,r) { return l * r; }, arguments);
     }
 
-    env['/'] = function() {
+    root['/'] = function() {
         return reduce(function(l,r) { return l / r; }, arguments);
     }
 
-    env['car'] = function() { return arguments[0]; }
-    env['cdr'] = function() { return slice.call(arguments[0], 1); }
+    root['car'] = function() { return arguments[0]; }
+    root['cdr'] = function() { return slice.call(arguments[0], 1); }
 
-    env['print'] = console.log.bind(console);
+    root['print'] = console.log.bind(console);
 
     return root;
 
@@ -133,7 +133,7 @@ function evaluate(env, code) {
     if (code instanceof Symbol) {
 
         var sym = code.symbol;
-        return env.find(sym).get(sym);
+        return E.get(E.find(env, sym), sym);
     
     } else if (!Array.isArray(code)) {
 
@@ -153,14 +153,14 @@ function evaluate(env, code) {
                     var k = code[1].symbol,
                         v = evaluate(env, code[2]);
                     
-                    env.set(k, v);
+                    E.set(env, k, v);
 
                     return v;
 
                 case 'set!':
 
                     var k = code[1].symbol,
-                        t = env.find(k),
+                        t = E.find(k),
                         v = evaluate(env, code[2]);
                     
                     t.set(k, v);
@@ -204,10 +204,10 @@ function evaluate(env, code) {
                             throw new Error("argument error: " + arguments.length + " for " + params.length);
                         }
 
-                        var localEnv = new Env(env);
+                        var localEnv = E(env);
 
                         for (var i = 0; i < params.length; ++i) {
-                            localEnv.set(params[i].symbol, arguments[i]);
+                            E.set(localEnv, params[i].symbol, arguments[i]);
                         }
 
                         return evaluate(localEnv, body);
