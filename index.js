@@ -1,5 +1,6 @@
 var sexp    = require('sexp'),
-    fs      = require('fs');
+    fs      = require('fs'),
+    E       = require('lexical-env');
 
 //
 // symbol
@@ -44,34 +45,6 @@ try {
 }
 
 //
-// env
-
-var hasOwnProperty = Object.hasOwnProperty,
-    getPrototypeOf = Object.getPrototypeOf;
-
-function E(parent) {
-    return Object.create(parent || null);
-}
-
-E.find = function(e, k) {
-    if (!e) {
-        throw new Error("symbol not found: " + k);
-    } else if (hasOwnProperty.call(e, k)) {
-        return e;
-    } else {
-        return E.find(getPrototypeOf(e), k);
-    }
-}
-
-E.set = function(e, k, v) {
-    e[k] = v;
-}
-
-E.get = function(e, k) {
-    return e[k];
-}
-
-//
 // helpers
 
 function symbol_p(v) {
@@ -91,7 +64,7 @@ function all(p, ary) {
 
 function makeRootEnv() {
 
-    var root = E();
+    var root = E.create();
 
     var slice = Array.prototype.slice;
 
@@ -133,7 +106,7 @@ function evaluate(env, code) {
     if (code instanceof Symbol) {
 
         var sym = code.symbol;
-        return E.get(E.find(env, sym), sym);
+        return E.get(env, sym);
     
     } else if (!Array.isArray(code)) {
 
@@ -153,7 +126,7 @@ function evaluate(env, code) {
                     var k = code[1].symbol,
                         v = evaluate(env, code[2]);
                     
-                    E.set(env, k, v);
+                    E.def(env, k, v);
 
                     return v;
 
@@ -204,10 +177,10 @@ function evaluate(env, code) {
                             throw new Error("argument error: " + arguments.length + " for " + params.length);
                         }
 
-                        var localEnv = E(env);
+                        var localEnv = E.create(env);
 
                         for (var i = 0; i < params.length; ++i) {
-                            E.set(localEnv, params[i].symbol, arguments[i]);
+                            E.def(localEnv, params[i].symbol, arguments[i]);
                         }
 
                         return evaluate(localEnv, body);

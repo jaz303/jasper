@@ -14,6 +14,7 @@
   "author": "Jason Frame <jason@onehackoranother.com> (http://jasonframe.co.uk)",
   "license": "ISC",
   "dependencies": {
-    "sexp": "~0.1.2"
+    "sexp": "~0.1.2",
+    "lexical-env": "0.0.2"
   }
 }
